@@ -1,0 +1,6 @@
+# Game files and saves must never be committed.
+*.iso
+*.xex
+*.dll
+*.gpd
+content/
