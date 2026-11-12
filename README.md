@@ -51,6 +51,42 @@ Build `cf206a3` ran one 43-minute scripted session with no crash or freeze. That
 
 ## Mod menu
 
+### Screenshots
+
+Taken in Xenia on a copy of the saves, with the mod menu installed.
+
+#### The Sim menu
+
+![The mod menu open on the Grim Reaper](images/sim-menu.png)
+
+Hold **LT** and press **A** on a Sim, here the Grim Reaper. The menu lists Warp To Me, Warp Me To Them, Play As This Sim, Add To My Household, Edit in CAS, Set Relationship, Add or Increment Skill, Set Motive and Needs. The round orange icon marks an option added by this mod. Plain pills such as Set Relationship are the game's own hidden debug options, which the mod now brings up in the normal menu. This means any Sim, even one you can't normally control, can be edited, moved or taken over from here. The funds in the corner show §20,000 after using the Money options.
+
+#### The ground menu
+
+![The mod menu open on a patch of ground](images/ground-menu.png)
+
+The same gesture on empty ground gives world options: Warp Me Here, Warp My Household Here and Summon The Town Here (every Sim in town walks up to that spot), plus Make Sim, Make Death, Make Pet, Make Breed, Build Or Buy On This Lot and Move Household Out. This is how you move around the world, create Sims and pets, or change a lot without leaving the game.
+
+#### Karma powers, all unlocked
+
+![The Karma Powers panel with Meteor Strike selected](images/karma-powers.png)
+
+The Karma Powers panel with the meter at 183 of 250 and Meteor Strike selected (cost 67). Normally these powers have to be bought with challenge points first. The launcher unlocks them every time a game loads, including the red "bad" powers such as sickness, ghosts, fire and meteors, so the Build mode challenge step is no longer needed.
+
+#### Households the game doesn't let you play
+
+![The town map with the Xu household selected](images/town-map-household.png)
+
+On the Town Map, the Xu household at 313 Harvest Nook is selected with the View and Interact options. The portraits on the right are that household's members. Households like this normally can't be played. With the mod, Play This Household and Play As This Sim take you into them.
+
+![Playing a Sim from the Xu household](images/playing-other-household.png)
+
+The result: the player is now controlling a Sim from the Xu household, shown in the portrait list and the Sim panel at the bottom right. Funds are §13,300, that household's own money.
+
+![Build mode on a large old house](images/other-lot-build-mode.png)
+
+Build mode on a large, dark house with a pond, showing its Lot Value (§161,549 furnished). This is a lot the game normally keeps closed to players. With the mod you can enter its lot and use Build Or Buy On This Lot to look around or change it.
+
 ### Set it up
 
 1. Apply the fixes above.
