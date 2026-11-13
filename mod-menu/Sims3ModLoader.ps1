@@ -94,27 +94,35 @@ Say 'Waiting for the game to load. Leave this window open while you play.'
 $likelyLo = [uint64]0x1A0000000; $likelyHi = [uint64]0x1C0000000; $allLo = [uint64]0x100000000; $allHi = [uint64]0x200000000
 $started = Get-Date
 $known = @{}
-$firstAt = $null
+$installed = $false
+$lastScan = [datetime]::MinValue
 while (-not $proc.HasExited) {
-  $elapsed = ((Get-Date) - $started).TotalSeconds
-  if ($null -eq $firstAt -or ((Get-Date) - $firstAt).TotalSeconds -lt 180) {
+  # Going back to the main menu makes the game reload its code at the same address, which removes the mod.
+  # Re-check every copy already patched, and put the mod back whenever one turns up unpatched again.
+  foreach ($image in @($known.Keys)) {
+    if ($known[$image] -ne 'patched') { continue }
+    if ([ModLoader]::Check($image, $patches) -eq 0) {
+      if ([ModLoader]::Apply($image, $patches)) { Say 'The game reloaded its code, so the mod menu was installed again.' }
+    }
+  }
+  # Look for copies not seen yet: every 3 seconds until the first install, then once a minute.
+  $now = Get-Date
+  if (($now - $lastScan).TotalSeconds -ge $(if ($installed) { 60 } else { 3 })) {
+    $lastScan = $now
     $lo = $likelyLo; $hi = $likelyHi
-    if ($null -eq $firstAt -and $elapsed -gt 180) { $lo = $allLo; $hi = $allHi }
+    if (-not $installed -and ($now - $started).TotalSeconds -gt 180) { $lo = $allLo; $hi = $allHi }
     foreach ($image in [ModLoader]::FindImages($spec.probeSha256, [int]$spec.probeLen, [int]$spec.probeOff, $lo, $hi)) {
       if ($known.ContainsKey($image)) { continue }
       $state = [ModLoader]::Check($image, $patches)
       if ($state -eq 0) {
         if ([ModLoader]::Apply($image, $patches)) {
-          $known[$image] = 1
-          if ($null -eq $firstAt) { $firstAt = Get-Date }
+          $known[$image] = 'patched'; $installed = $true
           Say 'Mod menu installed. In the game, hold LT and press A on the ground or on a Sim.'
         } else { Say 'Could not write to the game''s memory.' }
-      } elseif ($state -eq 1) { $known[$image] = 1 }
-      elseif ($state -eq -1) { Say 'This copy of the game does not match the version this mod was made for, so nothing was changed.'; $known[$image] = 1 }
+      } elseif ($state -eq 1) { $known[$image] = 'patched'; $installed = $true }
+      elseif ($state -eq -1) { Say 'This copy of the game does not match the version this mod was made for, so nothing was changed.'; $known[$image] = 'other' }
     }
-    Start-Sleep -Seconds 3
-  } else {
-    Start-Sleep -Seconds 10
   }
+  Start-Sleep -Seconds 2
 }
 Say 'The game has closed.'

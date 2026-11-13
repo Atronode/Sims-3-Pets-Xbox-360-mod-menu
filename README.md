@@ -1,6 +1,6 @@
 # Sims 3 Pets Xbox 360 mod menu
 
-An in-game mod menu for **The Sims 3 Pets** on Xbox 360, played in the [Xenia Canary](https://github.com/xenia-canary/xenia-canary) emulator, plus the fixes for that game's crashes and garbled textures.
+An in-game mod menu for **The Sims 3 Pets** on Xbox 360, played in the [Xenia Canary](https://github.com/xenia-canary/xenia-canary) emulator, plus the fixes for that game's crashes, garbled textures and stray pet shadows.
 
 You need your own copy of the game. No game files are included here.
 
@@ -9,38 +9,55 @@ You need your own copy of the game. No game files are included here.
 | | |
 |---|---|
 | Created | 10 November 2026, 02:35 UTC |
+| Updated | 13 November 2026: switched the renderer to Vulkan, which fixes the "Graphics device lost" crash and the stray pet shadows; the launcher now survives quitting to the main menu |
 | Xenia Canary branch | [`canary_experimental`](https://github.com/xenia-canary/xenia-canary/tree/canary_experimental) |
 | Xenia Canary commit | [`cf206a3bd`](https://github.com/xenia-canary/xenia-canary/releases/tag/cf206a3) |
 | Build date in Xenia's log | Nov 8 2026 |
 | `xenia_canary.exe` SHA-256 | `1A2C17275A7BEC1939BEC523FC512CE244E27213D2E0CC680E03A231A5DDB3FF` |
-| Renderer | Direct3D 12, RTV/DSV render target path |
+| Renderer | Vulkan, FBO render target path |
 | Xenia settings | [config/xenia-canary.config.toml](config/xenia-canary.config.toml), every setting, with the profile ID removed |
 | Game | The Sims 3 Pets, title ID `45410962`, version `0.0.0.3` |
 
-## Fix the crashes and garbled textures
+## Fix the crashes, garbled textures and stray shadows
 
 1. Back up your Xenia folder.
 2. Download `xenia_canary_windows.7z` from the [cf206a3 release](https://github.com/xenia-canary/xenia-canary/releases/tag/cf206a3) and replace your `xenia_canary.exe` with the new one.
 3. Open `xenia-canary.config.toml`, next to the exe, and set these under `[GPU]`:
 
    ```toml
+   gpu = "vulkan"
+   render_target_path_vulkan = "fbo"
    async_shader_compilation = false
    readback_resolve = "full"
    readback_memexport = true
    ```
 
-4. Start the game. Brief stutters are normal the first time new things appear, and they fade as shaders are cached.
+4. Start the game. The window title should end in "Vulkan - FBO". Brief stutters are normal the first time new things appear, and they fade as shaders are cached.
 
-Portraits saved while they were corrupted stay corrupted, so start from a save made after these changes. Leave the render target path on its default: the ROV path didn't help and made shadows worse.
+Portraits saved while they were corrupted stay corrupted, so start from a save made after these changes. Keep the `fbo` render target path. The more accurate `fsi` path ran at about 10 frames per second, caused a GPU timeout and didn't bring the shadows back. Direct3D 12's ROV path made shadows worse.
 
 ### Why these work
 
 - **Crashes:** [BorealisEcho's report](https://github.com/xenia-canary/game-compatibility/issues/135#issuecomment-6019598941) showed the two readback settings fix Sim pictures, corrupted textures and vertex explosions, but the game still crashed. Older builds could overwrite game memory with `readback_memexport` on, which [PR #1325](https://github.com/xenia-canary/xenia-canary/pull/1325) fixed. The updated build didn't crash in testing. The old build wasn't re-run for comparison, so this is the likely cause rather than a proven one.
+- **"Graphics device lost":** This message means the graphics driver stopped responding for more than two seconds and Windows reset it. Xenia can't recover from a reset, so it closes. On Direct3D 12 the game hung the graphics card just as something new was drawn: looking into a house, a household arriving indoors, a new pet appearing. On Vulkan the same steps caused no driver resets.
+- **Stray pet shadows:** On Direct3D 12, a pet's shadow indoors is drawn as a hard dark blob in front of its head instead of under its body, and the blob jumps around as the pet moves. Vulkan doesn't draw the blob. It doesn't draw the proper shadow either; see [Known issues](#known-issues).
 - **Garbled portraits:** The game appears to draw each portrait once and keep it. With `async_shader_compilation` on, Xenia [skips draws whose shaders aren't ready](https://github.com/xenia-canary/xenia-canary/blob/cf206a3/src/xenia/gpu/d3d12/pipeline_cache.cc#L570), so Sims lost their hair or turned into green squares and grey bars. With it off, the same test stayed clean, even with an empty shader cache.
 
 ### Testing
 
-Build `cf206a3` ran one 43-minute scripted session with no crash or freeze. That covered 34 Sim-switch attempts, 28 rounds of zooming, Town Map scrolling, the Build/Buy catalog, save-and-quit, Create-a-Sim and moving in a pre-made family. Atronode then played it on an Xbox 360 controller and reported it working. Other PCs weren't tested, and longer sessions could still crash.
+Build `cf206a3` ran one 43-minute scripted session with no crash or freeze. That covered 34 Sim-switch attempts, 28 rounds of zooming, Town Map scrolling, the Build/Buy catalog, save-and-quit, Create-a-Sim and moving in a pre-made family. Atronode then played it on an Xbox 360 controller and reported it working.
+
+On 13 November 2026, after testers hit "Graphics device lost", both renderers were compared on an RTX 5060 (driver 617.14) using copies of the saves. Direct3D 12 lost the graphics device in both indoor sessions, each time with a Windows driver reset. Vulkan ran about 2½ hours on the `fbo` path without a single GPU timeout or driver reset. That covered looking into the house, warping the household in, new pets from Make Pet, saving and carrying on, Build/Buy, 27 minutes indoors with autonomy on, and quitting to the main menu and loading again. Portraits stayed clean on Vulkan, even with an empty shader cache. Other PCs weren't tested, and longer sessions could still crash.
+
+### If it still crashes
+
+1. Check that the window title ends in "Vulkan - FBO".
+2. In Windows, open Start, type "reliability" and open **View reliability history**. A "LiveKernelEvent" or hardware error at the time of the crash means the graphics driver was reset.
+3. If those resets also happen when Xenia isn't running, the cause is the PC rather than the game. Update the graphics driver, turn off any overclocking, and make sure the graphics card is pushed firmly into its slot.
+
+### Known issues
+
+- **No shadows under Sims and pets indoors.** On the real console, Sims and pets have a soft shadow under them. Xenia's Vulkan renderer doesn't draw it, and Direct3D 12 draws a misplaced blob for pets instead. The `fsi` render path and the `depth_float24_convert_in_pixel_shader` and `depth_float24_round` settings were tried and none brought it back, so it needs a fix in Xenia itself.
 
 ### Related reports
 
@@ -107,7 +124,7 @@ Any folder
 3. The game opens along with a small black window. Leave that window open while you play. It closes when the game does.
 4. Load your save. All challenge rewards, including the karma powers, unlock each time a game loads.
 
-Always start the game this way. If you open the game straight from Xenia, there's no menu.
+Always start the game this way. If you open the game straight from Xenia, there's no menu. Quitting to the main menu and loading another game is fine: the launcher puts the menu back by itself.
 
 ### Open the menu
 
@@ -140,10 +157,13 @@ All testing used copies of the saves.
 | Karma powers unlocking | House and mailbox menus |
 | Age Up, Age Down from adult to young adult | Clone and Delete It |
 | Change Traits opening and selecting a trait | Going below young adult with Age Down, which leaves adult jobs and partners in place |
+| Make Pet (cats and dogs) | |
+| Menu and karma unlock after quitting to the main menu and loading again | |
+| All of the above on the Vulkan renderer | |
 
 ### How it works
 
-The launcher starts Xenia, waits for the game to load its script code, then writes small changes into the game's memory. Before changing anything, it checks each location against a SHA-256 hash, and if your copy doesn't match, it leaves the game alone. Nothing on disk changes: your game file, Xenia and your saves stay as they are.
+The launcher starts Xenia, waits for the game to load its script code, then writes small changes into the game's memory. Before changing anything, it checks each location against a SHA-256 hash, and if your copy doesn't match, it leaves the game alone. The game reloads its script code when you go back to the main menu, so the launcher keeps checking while you play and writes the changes again whenever they disappear. Nothing on disk changes: your game file, Xenia and your saves stay as they are.
 
 ## How this was made
 
@@ -152,7 +172,7 @@ The mod menu was made with [Claude Code](https://claude.com/claude-code), Anthro
 1. Read the game's script code from memory while it ran in Xenia, and traced how its hidden debug menu opens.
 2. Wrote the patch generator in [`tools`](tools) and the launcher in [`mod-menu`](mod-menu).
 3. Played the game in Xenia with scripted controller input, on copies of the saves, and checked each option from screenshots.
-4. Researched and tested the Xenia crash and texture fixes above.
+4. Researched and tested the Xenia crash and texture fixes above, including the Direct3D 12 and Vulkan comparison.
 
 ## Notes
 

@@ -8,6 +8,7 @@ HOW TO START THE GAME WITH THE MENU
 4. Load your save as normal. Karma powers unlock by themselves each time a game loads.
 
 Always start the game with this file. If you open the game from Xenia directly, there is no menu.
+Going back to the main menu and loading another game is fine: the menu comes back by itself.
 Keep this folder next to your xenia folder and your game's .iso file. The file's name must include Sims, 3 and Pets.
 
 HOW TO OPEN THE MENU
